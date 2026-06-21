@@ -2,7 +2,7 @@
   "$schema": "../../docs/schemas/plugin.json",
   "id": "xiaomi-mimo-asr",
   "name": "Xiaomi MiMo ASR",
-  "description": "Speech recognition (ASR) via Xiaomi MiMo v2.5 ASR model",
+  "description": "Speech recognition (ASR) via Xiaomi MiMo v2.5 ASR model. v2: auto-converts .caf/opus/ogg/flac/aac/m4a/amr to WAV via ffmpeg.",
   "kind": "plugin",
   "entry": "index.mjs",
   "homepage": "https://github.com/denisneuf/openclaw-xiaomi-mimo-asr",

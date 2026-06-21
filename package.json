@@ -1,7 +1,7 @@
 {
   "name": "openclaw-xiaomi-mimo-asr",
-  "version": "1.0.0",
-  "description": "Xiaomi MiMo v2.5 ASR plugin for OpenClaw — speech recognition via api.xiaomimimo.com",
+  "version": "2.0.0",
+  "description": "Xiaomi MiMo v2.5 ASR plugin for OpenClaw — speech recognition via api.xiaomimimo.com. v2 adds auto-conversion of .caf, .opus, .ogg, .flac, .aac, .m4a, .amr to WAV.",
   "type": "module",
   "license": "MIT",
   "keywords": ["openclaw", "plugin", "asr", "stt", "speech-recognition", "xiaomi", "mimo"],

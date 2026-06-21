@@ -1,9 +1,99 @@
 import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+import { execFile } from "node:child_process";
+import { writeFile, unlink, readFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { randomUUID } from "node:crypto";
 
 const PROVIDER_ID = "xiaomi-mimo-asr";
 const DEFAULT_MODEL = "mimo-v2.5-asr";
 const BASE_URL = "https://api.xiaomimimo.com/v1";
 const ENV_KEY = "XIAOMI_API_KEY";
+
+// MIME types that MiMo can handle directly
+const MIMO_NATIVE_FORMATS = new Set([
+  "audio/wav",
+  "audio/wave",
+  "audio/x-wav",
+  "audio/mpeg",
+  "audio/mp3",
+  "audio/x-mpeg",
+]);
+
+// MIME types that need conversion to WAV before sending to MiMo
+const CONVERTIBLE_FORMATS = new Set([
+  "audio/x-caf",
+  "audio/x-caf",
+  "audio/opus",
+  "audio/ogg",
+  "audio/flac",
+  "audio/aac",
+  "audio/x-aac",
+  "audio/m4a",
+  "audio/x-m4a",
+  "audio/mp4",
+  "audio/amr",
+  "audio/x-amr",
+]);
+
+/**
+ * Convert an audio buffer to PCM WAV (16kHz, mono) using ffmpeg.
+ * Returns { buffer, mime } on success, or throws.
+ */
+async function convertToWav(inputBuffer, sourceMime) {
+  const extMap = {
+    "audio/x-caf": ".caf",
+    "audio/opus": ".opus",
+    "audio/ogg": ".ogg",
+    "audio/flac": ".flac",
+    "audio/aac": ".aac",
+    "audio/x-aac": ".aac",
+    "audio/m4a": ".m4a",
+    "audio/x-m4a": ".m4a",
+    "audio/mp4": ".m4a",
+    "audio/amr": ".amr",
+    "audio/x-amr": ".amr",
+  };
+  const inExt = extMap[sourceMime] || ".bin";
+  const tag = randomUUID().slice(0, 8);
+  const inPath = join(tmpdir(), `mimo-cvt-${tag}${inExt}`);
+  const outPath = join(tmpdir(), `mimo-cvt-${tag}.wav`);
+
+  await writeFile(inPath, inputBuffer);
+
+  try {
+    await new Promise((resolve, reject) => {
+      execFile(
+        "ffmpeg",
+        [
+          "-y",
+          "-i", inPath,
+          "-acodec", "pcm_s16le",
+          "-ar", "16000",
+          "-ac", "1",
+          outPath,
+        ],
+        { timeout: 30_000 },
+        (err, stdout, stderr) => {
+          if (err) {
+            // ffmpeg writes diagnostics to stderr even on success
+            const msg = (stderr || "").split("\n").slice(-5).join("; ");
+            reject(new Error(`ffmpeg conversion failed: ${err.message} — ${msg}`));
+          } else {
+            resolve();
+          }
+        }
+      );
+    });
+
+    const wavBuffer = await readFile(outPath);
+    return { buffer: wavBuffer, mime: "audio/wav" };
+  } finally {
+    // Best-effort cleanup of temp files
+    await unlink(inPath).catch(() => {});
+    await unlink(outPath).catch(() => {});
+  }
+}
 
 export default definePluginEntry({
   id: PROVIDER_ID,
@@ -38,9 +128,29 @@ export default definePluginEntry({
           );
         }
 
-        // Convert audio buffer to base64 data URL
-        const mime = req.mime || "audio/wav";
-        const base64 = req.buffer.toString("base64");
+        // Resolve audio buffer — may need format conversion
+        let mime = req.mime || "audio/wav";
+        let buffer = req.buffer;
+
+        // Normalise MIME to lowercase for matching
+        const normMime = mime.toLowerCase();
+
+        if (!MIMO_NATIVE_FORMATS.has(normMime)) {
+          if (CONVERTIBLE_FORMATS.has(normMime)) {
+            // Convert non-native format to WAV
+            const converted = await convertToWav(buffer, normMime);
+            buffer = converted.buffer;
+            mime = converted.mime;
+          } else {
+            // Unknown format — try sending as-is (the API will reject it if unsupported)
+            console.warn(
+              `[xiaomi-mimo-asr] unknown audio MIME "${mime}", sending raw (likely to fail)`
+            );
+          }
+        }
+
+        // Encode as base64 data URL
+        const base64 = buffer.toString("base64");
         const dataUrl = `data:${mime};base64,${base64}`;
 
         const body = {
