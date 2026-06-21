@@ -7,5 +7,14 @@
   "entry": "index.mjs",
   "homepage": "https://github.com/denisneuf/openclaw-xiaomi-mimo-asr",
   "author": "denisneuf",
-  "license": "MIT"
+  "license": "MIT",
+  "enabledByDefault": true,
+  "contracts": {
+    "mediaUnderstandingProviders": ["xiaomi-mimo-asr"]
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
 }

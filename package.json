@@ -2,7 +2,13 @@
   "name": "openclaw-xiaomi-mimo-asr",
   "version": "1.0.0",
   "description": "Xiaomi MiMo v2.5 ASR plugin for OpenClaw — speech recognition via api.xiaomimimo.com",
+  "type": "module",
   "license": "MIT",
   "keywords": ["openclaw", "plugin", "asr", "stt", "speech-recognition", "xiaomi", "mimo"],
-  "homepage": "https://github.com/denisneuf/openclaw-xiaomi-mimo-asr"
+  "homepage": "https://github.com/denisneuf/openclaw-xiaomi-mimo-asr",
+  "openclaw": {
+    "extensions": [
+      "./index.mjs"
+    ]
+  }
 }
