@@ -1,0 +1,11 @@
+{
+  "$schema": "../../docs/schemas/plugin.json",
+  "id": "xiaomi-mimo-asr",
+  "name": "Xiaomi MiMo ASR",
+  "description": "Speech recognition (ASR) via Xiaomi MiMo v2.5 ASR model",
+  "kind": "plugin",
+  "entry": "index.mjs",
+  "homepage": "https://github.com/denisneuf/openclaw-xiaomi-mimo-asr",
+  "author": "denisneuf",
+  "license": "MIT"
+}
